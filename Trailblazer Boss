@@ -1,16 +1,25 @@
+#Boss tb advanced tech
+
+#Below is a revised version of the BOSS Procedure v2.0 code, incorporating the optimizations and updates from the guide:
+
+---
+
+#Revised Implementation Code
+
 import openai
 import gspread
 from google.oauth2.service_account import Credentials
-from textblob import TextBlob
-from googletrans import Translator
-from transformers import CLIPProcessor, CLIPModel
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, CLIPProcessor, CLIPModel
+from sentence_transformers import SentenceTransformer
 from PIL import Image
 import numpy as np
+import onnxruntime as ort  # For optimized inference
+from googletrans import Translator
+import matplotlib.pyplot as plt
 
-# API Keys and Authentication
+# === API and Authentication Setup === #
 openai.api_key = 'your_openai_api_key_here'
 
-# Google Sheets Setup
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 creds = Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
 client = gspread.authorize(creds)
@@ -18,21 +27,34 @@ SPREADSHEET_ID = 'your_spreadsheet_id_here'
 WORKSHEET_NAME = 'Game Data'
 sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
 
-# Translator for Multi-Lingual Support
-translator = Translator()
+# === Models and Processors === #
+# Tokenizer and model for sentiment analysis (distilled BERT)
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+sentiment_model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
 
-# CLIP Model for Image Recognition
+# CLIP model for image analysis
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-# Dynamic Prompts by Genre
+# SentenceTransformer for embedding generation and similarity analysis
+sentence_transformer = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Translator for multi-lingual support
+translator = Translator()
+
+# === Optimization Flags === #
+ort_session = ort.InferenceSession("distilbert-base-uncased.onnx")  # Optimized sentiment model (pre-converted to ONNX)
+
+# === Dynamic Prompt Generation === #
 prompts_by_genre = {
     "RPG": ["What are the character progression mechanics?", "How does the storyline affect gameplay?"],
     "FPS": ["What weapons are available?", "What is the level design like?"],
     "Adventure": ["How is exploration rewarded?", "Describe the puzzle mechanics."]
 }
 
-# Function: Generate AI Response
+# === Functions === #
+
+# Generate AI Response
 def ask_ai(question):
     response = openai.Completion.create(
         engine="text-davinci-003",
@@ -42,18 +64,21 @@ def ask_ai(question):
     )
     return response.choices[0].text.strip()
 
-# Function: Sentiment Analysis
+# Sentiment Analysis using ONNX for optimization
 def analyze_sentiment(response):
-    blob = TextBlob(response)
-    return blob.sentiment.polarity  # Polarity: -1 (negative) to +1 (positive)
+    inputs = tokenizer(response, return_tensors="pt", truncation=True, padding=True)
+    ort_inputs = {k: v.cpu().numpy() for k, v in inputs.items()}
+    outputs = ort_session.run(None, ort_inputs)
+    sentiment_score = outputs[0][0][1]  # Assuming binary classification: [negative, positive]
+    return sentiment_score
 
-# Function: Image Analysis
+# Image Analysis with CLIP
 def analyze_image(image_path):
     image = Image.open(image_path).convert("RGB")
     inputs = clip_processor(images=image, return_tensors="pt")
     outputs = clip_model.get_image_features(**inputs)
     features = np.array(outputs[0])
-    
+   
     # Simulated feature extraction for demo
     return {
         "Art Style": "Cel-shaded",
@@ -61,33 +86,33 @@ def analyze_image(image_path):
         "Mood": "Serene"
     }
 
-# Main Function: Populate Google Sheet
+# Populate Google Sheet
 def fill_sheet():
     rows = sheet.get_all_values()
     for i, row in enumerate(rows):
         if row[1] == '':  # Check if response is missing
             question = row[0]
             genre = row[2] if len(row) > 2 else "General"
-            
+           
             # Generate dynamic prompt
             dynamic_prompt = prompts_by_genre.get(genre, [question])[0]
             response = ask_ai(dynamic_prompt)
-            
+           
             # Sentiment Analysis
             sentiment = analyze_sentiment(response)
-            
+           
             # Translate if language is specified
             language = row[3] if len(row) > 3 else "en"
             if language != "en":
                 response = translator.translate(response, dest=language).text
-            
+           
             # Update Google Sheet
             sheet.update_cell(i + 1, 2, response)  # AI Response
             sheet.update_cell(i + 1, 5, f"Sentiment: {sentiment:.2f}")  # Sentiment
 
             print(f"Updated row {i + 1}: {question} -> {response}")
 
-# Function: Update Image Analysis
+# Populate Image Analysis in Google Sheet
 def populate_image_analysis(image_path, row):
     features = analyze_image(image_path)
     sheet.update_cell(row, 6, features["Art Style"])  # Art Style
@@ -95,10 +120,30 @@ def populate_image_analysis(image_path, row):
     sheet.update_cell(row, 8, features["Mood"])  # Mood
     print(f"Updated row {row} with image analysis.")
 
-# Execute the Bot
+# Visualization for Data Analysis
+def visualize_sentiments():
+    rows = sheet.get_all_values()
+    sentiments = []
+    questions = []
+    for row in rows[1:]:  # Skip header row
+        try:
+            sentiment = float(row[4].split(':')[-1])  # Extract sentiment score
+            sentiments.append(sentiment)
+            questions.append(row[0])
+        except:
+            continue
+    plt.barh(questions, sentiments, color='blue')
+    plt.xlabel("Sentiment Score")
+    plt.title("Sentiment Analysis of AI Responses")
+    plt.show()
+
+# === Main Execution === #
 if __name__ == "__main__":
     # Fill sheet with AI responses
     fill_sheet()
-    
+   
     # Example: Populate image analysis for row 2
     # populate_image_analysis("path_to_image.jpg", 2)
+   
+    # Visualize sentiment scores
+    visualize_sentiments()
