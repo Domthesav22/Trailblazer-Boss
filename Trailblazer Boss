@@ -6,99 +6,128 @@ from googletrans import Translator
 from transformers import CLIPProcessor, CLIPModel
 from PIL import Image
 import numpy as np
+import os
+from dotenv import load_dotenv
+import logging
 
-# API Keys and Authentication
-openai.api_key = 'your_openai_api_key_here'
+# === Setup Logging === #
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Google Sheets Setup
+# === Environment Setup === #
+load_dotenv()  # Load .env file for environment variables
+openai.api_key = os.getenv('OPENAI_API_KEY')  # OpenAI API key from environment variables
+
+# === Google Sheets Setup === #
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-creds = Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
-client = gspread.authorize(creds)
-SPREADSHEET_ID = 'your_spreadsheet_id_here'
-WORKSHEET_NAME = 'Game Data'
-sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+try:
+    creds = Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
+    client = gspread.authorize(creds)
+    SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')  # Spreadsheet ID from environment variables
+    WORKSHEET_NAME = 'Game Data'
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+except FileNotFoundError:
+    logging.error("Error: 'credentials.json' file not found. Ensure it exists in the project directory.")
+    exit(1)
+except Exception as e:
+    logging.error(f"Google Sheets Setup Error: {e}")
+    exit(1)
 
-# Translator for Multi-Lingual Support
+# === AI and NLP Models === #
 translator = Translator()
-
-# CLIP Model for Image Recognition
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-# Dynamic Prompts by Genre
+# === Dynamic Prompts === #
 prompts_by_genre = {
     "RPG": ["What are the character progression mechanics?", "How does the storyline affect gameplay?"],
     "FPS": ["What weapons are available?", "What is the level design like?"],
     "Adventure": ["How is exploration rewarded?", "Describe the puzzle mechanics."]
 }
 
-# Function: Generate AI Response
+# === Functions === #
+
 def ask_ai(question):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=question,
-        max_tokens=150,
-        temperature=0.7
-    )
-    return response.choices[0].text.strip()
+    """Generate a response using OpenAI."""
+    try:
+        response = openai.Completion.create(
+            engine="gpt-3.5-turbo",
+            prompt=question,
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response.choices[0].text.strip()
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API Error: {e}")
+        return None
 
-# Function: Sentiment Analysis
 def analyze_sentiment(response):
-    blob = TextBlob(response)
-    return blob.sentiment.polarity  # Polarity: -1 (negative) to +1 (positive)
+    """Perform sentiment analysis on the AI response."""
+    try:
+        blob = TextBlob(response)
+        return blob.sentiment.polarity  # Polarity ranges from -1 (negative) to +1 (positive)
+    except Exception as e:
+        logging.warning(f"Sentiment Analysis Error: {e}")
+        return 0  # Neutral sentiment
 
-# Function: Image Analysis
 def analyze_image(image_path):
-    image = Image.open(image_path).convert("RGB")
-    inputs = clip_processor(images=image, return_tensors="pt")
-    outputs = clip_model.get_image_features(**inputs)
-    features = np.array(outputs[0])
-    
-    # Simulated feature extraction for demo
-    return {
-        "Art Style": "Cel-shaded",
-        "Environment": "Forest",
-        "Mood": "Serene"
-    }
+    """Analyze an image using the CLIP model."""
+    try:
+        image = Image.open(image_path).convert("RGB")
+        inputs = clip_processor(images=image, return_tensors="pt")
+        outputs = clip_model.get_image_features(**inputs)
+        features = np.array(outputs[0])
 
-# Main Function: Populate Google Sheet
-def fill_sheet():
-    rows = sheet.get_all_values()
-    for i, row in enumerate(rows):
-        if row[1] == '':  # Check if response is missing
-            question = row[0]
-            genre = row[2] if len(row) > 2 else "General"
-            
-            # Generate dynamic prompt
-            dynamic_prompt = prompts_by_genre.get(genre, [question])[0]
-            response = ask_ai(dynamic_prompt)
-            
-            # Sentiment Analysis
+        # Simulated feature extraction
+        return {
+            "Art Style": "Cel-shaded",
+            "Environment": "Forest",
+            "Mood": "Serene"
+        }
+    except Exception as e:
+        logging.error(f"Image Analysis Error: {e}")
+        return None
+
+def update_row(row, index):
+    """Process and update a single row."""
+    try:
+        question = row[0]
+        if not question:
+            logging.warning(f"Skipping row {index + 1}: Empty question.")
+            return
+
+        genre = row[2] if len(row) > 2 else "General"
+        dynamic_prompt = prompts_by_genre.get(genre, [question])[0]
+        response = ask_ai(dynamic_prompt)
+
+        if response:
             sentiment = analyze_sentiment(response)
-            
-            # Translate if language is specified
             language = row[3] if len(row) > 3 else "en"
+
+            # Translate response if needed
             if language != "en":
-                response = translator.translate(response, dest=language).text
-            
-            # Update Google Sheet
-            sheet.update_cell(i + 1, 2, response)  # AI Response
-            sheet.update_cell(i + 1, 5, f"Sentiment: {sentiment:.2f}")  # Sentiment
+                try:
+                    response = translator.translate(response, dest=language).text
+                except Exception as e:
+                    logging.warning(f"Translation Error: {e}")
 
-            print(f"Updated row {i + 1}: {question} -> {response}")
+            # Batch update to Google Sheets
+            sheet.update_cell(index + 1, 2, response)  # AI Response
+            sheet.update_cell(index + 1, 5, f"Sentiment: {sentiment:.2f}")  # Sentiment
+            logging.info(f"Updated row {index + 1}: {question} -> {response} (Sentiment: {sentiment:.2f})")
+    except Exception as e:
+        logging.error(f"Error processing row {index + 1}: {e}")
 
-# Function: Update Image Analysis
-def populate_image_analysis(image_path, row):
-    features = analyze_image(image_path)
-    sheet.update_cell(row, 6, features["Art Style"])  # Art Style
-    sheet.update_cell(row, 7, features["Environment"])  # Environment
-    sheet.update_cell(row, 8, features["Mood"])  # Mood
-    print(f"Updated row {row} with image analysis.")
+def fill_sheet():
+    """Populate Google Sheets with AI responses and sentiment analysis."""
+    try:
+        rows = sheet.get_all_values()
+        for i, row in enumerate(rows):
+            if i == 0:  # Skip header row
+                continue
+            update_row(row, i)
+    except gspread.exceptions.GSpreadException as e:
+        logging.error(f"Google Sheets API Error: {e}")
 
-# Execute the Bot
+# === Execution === #
 if __name__ == "__main__":
-    # Fill sheet with AI responses
     fill_sheet()
-    
-    # Example: Populate image analysis for row 2
-    # populate_image_analysis("path_to_image.jpg", 2)
