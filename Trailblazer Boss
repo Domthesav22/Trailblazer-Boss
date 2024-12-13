@@ -1,10 +1,3 @@
-Below is a revised version of the BOSS Procedure v2.0 code, incorporating the optimizations and updates from the guide:
-
-
----
-
-Revised Implementation Code
-
 import openai
 import gspread
 from google.oauth2.service_account import Credentials
@@ -12,37 +5,50 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, CLIP
 from sentence_transformers import SentenceTransformer
 from PIL import Image
 import numpy as np
-import onnxruntime as ort  # For optimized inference
+import onnxruntime as ort
 from googletrans import Translator
 import matplotlib.pyplot as plt
+import logging
+import os
+from dotenv import load_dotenv
+
+# === Setup Logging === #
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# === Environment Setup === #
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json") #Default credentials file
 
 # === API and Authentication Setup === #
-openai.api_key = 'your_openai_api_key_here'
-
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-creds = Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
-client = gspread.authorize(creds)
-SPREADSHEET_ID = 'your_spreadsheet_id_here'
-WORKSHEET_NAME = 'Game Data'
-sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+try:
+    creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
+    client = gspread.authorize(creds)
+    WORKSHEET_NAME = 'Game Data'
+    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+except FileNotFoundError:
+    logging.error(f"Credentials file '{CREDENTIALS_FILE}' not found.")
+    exit(1)
+except Exception as e:
+    logging.error(f"Google Sheets authentication error: {e}")
+    exit(1)
+
 
 # === Models and Processors === #
-# Tokenizer and model for sentiment analysis (distilled BERT)
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-sentiment_model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
+try:
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    sentiment_model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
+    ort_session = ort.InferenceSession("distilbert-base-uncased.onnx")
+    clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    sentence_transformer = SentenceTransformer('all-MiniLM-L6-v2')
+except Exception as e:
+    logging.error(f"Model loading error: {e}")
+    exit(1)
 
-# CLIP model for image analysis
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-
-# SentenceTransformer for embedding generation and similarity analysis
-sentence_transformer = SentenceTransformer('all-MiniLM-L6-v2')
-
-# Translator for multi-lingual support
 translator = Translator()
-
-# === Optimization Flags === #
-ort_session = ort.InferenceSession("distilbert-base-uncased.onnx")  # Optimized sentiment model (pre-converted to ONNX)
 
 # === Dynamic Prompt Generation === #
 prompts_by_genre = {
@@ -52,156 +58,120 @@ prompts_by_genre = {
 }
 
 # === Functions === #
-
-# Generate AI Response
 def ask_ai(question):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=question,
-        max_tokens=150,
-        temperature=0.7
-    )
-    return response.choices[0].text.strip()
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",  # or gpt-3.5-turbo if cost is a concern
+            prompt=question,
+            max_tokens=150,
+            temperature=0.7
+        )
+        return response.choices[0].text.strip()
+    except openai.error.OpenAIError as e:
+        logging.error(f"OpenAI API error: {e}")
+        return None
 
-# Sentiment Analysis using ONNX for optimization
 def analyze_sentiment(response):
-    inputs = tokenizer(response, return_tensors="pt", truncation=True, padding=True)
-    ort_inputs = {k: v.cpu().numpy() for k, v in inputs.items()}
-    outputs = ort_session.run(None, ort_inputs)
-    sentiment_score = outputs[0][0][1]  # Assuming binary classification: [negative, positive]
-    return sentiment_score
+    try:
+        inputs = tokenizer(response, return_tensors="pt", truncation=True, padding=True)
+        ort_inputs = {k: v.cpu().numpy() for k, v in inputs.items()}
+        outputs = ort_session.run(None, ort_inputs)
+        sentiment_score = outputs[0][0][1]
+        return sentiment_score
+    except Exception as e:
+        logging.error(f"Sentiment analysis error: {e}")
+        return 0  # Return neutral sentiment on error
 
-# Image Analysis with CLIP
 def analyze_image(image_path):
-    image = Image.open(image_path).convert("RGB")
-    inputs = clip_processor(images=image, return_tensors="pt")
-    outputs = clip_model.get_image_features(**inputs)
-    features = np.array(outputs[0])
-    
-    # Simulated feature extraction for demo
-    return {
-        "Art Style": "Cel-shaded",
-        "Environment": "Forest",
-        "Mood": "Serene"
-    }
+    try:
+        image = Image.open(image_path).convert("RGB")
+        inputs = clip_processor(images=image, return_tensors="pt")
+        outputs = clip_model.get_image_features(**inputs)
+        features = np.array(outputs[0])
+        # Placeholder - replace with actual analysis if needed. For now, return a placeholder
+        return {"Art Style": "N/A", "Environment": "N/A", "Mood": "N/A"}
+    except FileNotFoundError:
+        logging.error(f"Image file not found: {image_path}")
+        return None
+    except Exception as e:
+        logging.error(f"Image analysis error: {e}")
+        return None
 
-# Populate Google Sheet
 def fill_sheet():
-    rows = sheet.get_all_values()
-    for i, row in enumerate(rows):
-        if row[1] == '':  # Check if response is missing
-            question = row[0]
+    try:
+        rows = sheet.get_all_values()
+        for i, row in enumerate(rows):
+            if i == 0: continue #Skip header row
+            if row and len(row)>1 and row[1]: continue #Skip rows that already have a response
+            question = row[0] if row else None
+            if not question:
+                logging.warning(f"Skipping empty row: {i+1}")
+                continue
             genre = row[2] if len(row) > 2 else "General"
-            
-            # Generate dynamic prompt
             dynamic_prompt = prompts_by_genre.get(genre, [question])[0]
             response = ask_ai(dynamic_prompt)
-            
-            # Sentiment Analysis
-            sentiment = analyze_sentiment(response)
-            
-            # Translate if language is specified
-            language = row[3] if len(row) > 3 else "en"
-            if language != "en":
-                response = translator.translate(response, dest=language).text
-            
-            # Update Google Sheet
-            sheet.update_cell(i + 1, 2, response)  # AI Response
-            sheet.update_cell(i + 1, 5, f"Sentiment: {sentiment:.2f}")  # Sentiment
+            if response:
+                sentiment = analyze_sentiment(response)
+                language = row[3] if len(row) > 3 else "en"
+                if language != "en":
+                    try:
+                        response = translator.translate(response, dest=language).text
+                    except Exception as e:
+                        logging.warning(f"Translation error: {e}")
+                sheet.update_cell(i + 1, 2, response)
+                sheet.update_cell(i + 1, 5, f"Sentiment: {sentiment:.2f}")
+                logging.info(f"Updated row {i + 1}: {question} -> {response}")
+            else:
+                logging.warning(f"No response from AI for row {i+1}")
+    except gspread.exceptions.APIError as e:
+        logging.error(f"Google Sheets API Error: {e}")
+    except Exception as e:
+        logging.error(f"Error in fill_sheet: {e}")
 
-            print(f"Updated row {i + 1}: {question} -> {response}")
-
-# Populate Image Analysis in Google Sheet
 def populate_image_analysis(image_path, row):
     features = analyze_image(image_path)
-    sheet.update_cell(row, 6, features["Art Style"])  # Art Style
-    sheet.update_cell(row, 7, features["Environment"])  # Environment
-    sheet.update_cell(row, 8, features["Mood"])  # Mood
-    print(f"Updated row {row} with image analysis.")
-
-# Visualization for Data Analysis
-def visualize_sentiments():
-    rows = sheet.get_all_values()
-    sentiments = []
-    questions = []
-    for row in rows[1:]:  # Skip header row
+    if features:
         try:
-            sentiment = float(row[4].split(':')[-1])  # Extract sentiment score
-            sentiments.append(sentiment)
-            questions.append(row[0])
-        except:
-            continue
-    plt.barh(questions, sentiments, color='blue')
-    plt.xlabel("Sentiment Score")
-    plt.title("Sentiment Analysis of AI Responses")
-    plt.show()
+            sheet.update_cell(row, 6, features["Art Style"])
+            sheet.update_cell(row, 7, features["Environment"])
+            sheet.update_cell(row, 8, features["Mood"])
+            logging.info(f"Updated row {row} with image analysis.")
+        except gspread.exceptions.APIError as e:
+            logging.error(f"Google Sheets API Error during image update: {e}")
+    else:
+        logging.warning(f"Could not analyze image for row {row}")
+
+def visualize_sentiments():
+    try:
+        rows = sheet.get_all_values()
+        sentiments = []
+        questions = []
+        for row in rows[1:]:
+            try:
+                if len(row) > 4 and row[4]: # check if sentiment cell exists and isn't empty
+                    sentiment = float(row[4].split(':')[-1])
+                    sentiments.append(sentiment)
+                    questions.append(row[0])
+            except (ValueError, IndexError):
+                logging.warning(f"Invalid sentiment data in row: {row}")
+                continue
+
+        if sentiments: # check if there is any sentiment data
+            plt.barh(questions, sentiments, color='blue')
+            plt.xlabel("Sentiment Score")
+            plt.title("Sentiment Analysis of AI Responses")
+            plt.show()
+        else:
+            logging.warning("No valid sentiment data to visualize.")
+
+    except gspread.exceptions.APIError as e:
+        logging.error(f"Google Sheets API Error during visualization: {e}")
+    except Exception as e:
+        logging.error(f"Error during visualization: {e}")
 
 # === Main Execution === #
 if __name__ == "__main__":
-    # Fill sheet with AI responses
     fill_sheet()
-    
-    # Example: Populate image analysis for row 2
-    # populate_image_analysis("path_to_image.jpg", 2)
-    
-    # Visualize sentiment scores
+    # Example usage (uncomment and replace with actual path and row):
+    # populate_image_analysis("path/to/your/image.jpg", 2)
     visualize_sentiments()
-
-
----
-
-Key Improvements
-
-1. Sentiment Analysis:
-
-Switched to a distilled BERT model optimized for inference using ONNX Runtime.
-
-Significantly faster and memory-efficient.
-
-
-
-2. Dynamic Prompt Generation:
-
-Enhanced genre-specific prompts with modular, easily expandable dictionaries.
-
-
-
-3. Image Recognition:
-
-Retained CLIP but optimized inference by batching and preprocessing inputs.
-
-
-
-4. Visualization:
-
-Added a sentiment visualization feature using Matplotlib for trend analysis.
-
-
-
-5. Optimized Google Sheets Interaction:
-
-Reduced API calls with efficient updates.
-
-
-
-6. Efficient Deployment:
-
-Incorporated ONNX for optimized models and simplified processes for local and cloud use.
-
-
-
-
-
----
-
-Next Steps
-
-Test the updated system with a small dataset for debugging and benchmarking.
-
-Convert additional models (e.g., CLIP) to ONNX for faster inference.
-
-Deploy locally or to the cloud using Docker or Google Cloud Functions.
-
-
-Let me know if you’d like further assistance with setup, deployment, or additional features!
-
