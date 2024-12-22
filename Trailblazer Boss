@@ -2,7 +2,7 @@ import openai
 import gspread
 from google.oauth2.service_account import Credentials
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, CLIPProcessor, CLIPModel
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer  # You might need this later for text embeddings
 from PIL import Image
 import numpy as np
 import onnxruntime as ort
@@ -19,14 +19,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
-CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json") #Default credentials file
+CREDENTIALS_FILE = os.getenv("CREDENTIALS_FILE", "credentials.json")  # Default credentials file
 
 # === API and Authentication Setup === #
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 try:
     creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
     client = gspread.authorize(creds)
-    WORKSHEET_NAME = 'Game Data'
+    WORKSHEET_NAME = "Game Data"  # Or your actual sheet name
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
 except FileNotFoundError:
     logging.error(f"Credentials file '{CREDENTIALS_FILE}' not found.")
@@ -35,15 +35,16 @@ except Exception as e:
     logging.error(f"Google Sheets authentication error: {e}")
     exit(1)
 
-
 # === Models and Processors === #
 try:
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    # Assuming you have a pre-trained sentiment model. If not, you need to train or download one
     sentiment_model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
-    ort_session = ort.InferenceSession("distilbert-base-uncased.onnx")
+    # Ensure the ONNX file exists or create the conversion script 
+    ort_session = ort.InferenceSession("distilbert-base-uncased.onnx") 
     clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    sentence_transformer = SentenceTransformer('all-MiniLM-L6-v2')
+    sentence_transformer = SentenceTransformer("all-MiniLM-L6-v2")
 except Exception as e:
     logging.error(f"Model loading error: {e}")
     exit(1)
@@ -52,44 +53,110 @@ translator = Translator()
 
 # === Dynamic Prompt Generation === #
 prompts_by_genre = {
-    "RPG": ["What are the character progression mechanics?", "How does the storyline affect gameplay?"],
+    "RPG": [
+        "What are the character progression mechanics?",
+        "How does the storyline affect gameplay?",
+    ],
     "FPS": ["What weapons are available?", "What is the level design like?"],
-    "Adventure": ["How is exploration rewarded?", "Describe the puzzle mechanics."]
+    "Adventure": ["How is exploration rewarded?", "Describe the puzzle mechanics."],
 }
 
 # === Functions === #
+
 def ask_ai(question):
+    """Asks a question to the OpenAI API and returns the response."""
     try:
-        response = openai.Completion.create(
-            engine="text-davinci-003",  # or gpt-3.5-turbo if cost is a concern
-            prompt=question,
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Use the chat model
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that answers questions about games."},
+                {"role": "user", "content": question},
+            ],
             max_tokens=150,
-            temperature=0.7
+            temperature=0.7,
         )
-        return response.choices[0].text.strip()
+        return response.choices[0].message.content.strip()
     except openai.error.OpenAIError as e:
         logging.error(f"OpenAI API error: {e}")
         return None
 
 def analyze_sentiment(response):
+    """Analyzes the sentiment of a text response using the ONNX model."""
     try:
-        inputs = tokenizer(response, return_tensors="pt", truncation=True, padding=True)
+        inputs = tokenizer(
+            response, return_tensors="pt", truncation=True, padding=True
+        )
         ort_inputs = {k: v.cpu().numpy() for k, v in inputs.items()}
         outputs = ort_session.run(None, ort_inputs)
-        sentiment_score = outputs[0][0][1]
+        logits = outputs[0][0]
+        predicted_class = np.argmax(logits)
+
+        # Map predicted_class to a sentiment score (example mapping)
+        if predicted_class == 0:
+            sentiment_score = -0.5  # Negative sentiment
+        elif predicted_class == 1:
+            sentiment_score = 0.5  # Positive sentiment
+        else:
+            sentiment_score = 0  # Neutral (or handle other classes as needed)
+
         return sentiment_score
     except Exception as e:
         logging.error(f"Sentiment analysis error: {e}")
         return 0  # Return neutral sentiment on error
 
 def analyze_image(image_path):
+    """
+    Analyzes an image using the CLIP model and returns a dictionary of features.
+    This is a placeholder implementation that needs to be completed.
+    """
     try:
         image = Image.open(image_path).convert("RGB")
         inputs = clip_processor(images=image, return_tensors="pt")
         outputs = clip_model.get_image_features(**inputs)
-        features = np.array(outputs[0])
-        # Placeholder - replace with actual analysis if needed. For now, return a placeholder
-        return {"Art Style": "N/A", "Environment": "N/A", "Mood": "N/A"}
+        image_features = outputs[0].detach().numpy()  # Convert to NumPy array
+
+        # === Placeholder for Image Analysis Logic === #
+        # You'll need to define text prompts for different categories
+        # and compare their embeddings to the image embedding.
+
+        art_styles = ["photorealistic", "cartoon", "anime", "pixel art"]
+        environments = ["forest", "city", "space", "underwater"]
+        moods = ["happy", "sad", "exciting", "scary"]
+
+        # Get text embeddings for categories using sentence_transformer (or CLIP)
+        art_style_embeddings = sentence_transformer.encode(art_styles)
+        environment_embeddings = sentence_transformer.encode(environments)
+        mood_embeddings = sentence_transformer.encode(moods)
+
+        # Calculate cosine similarity between image features and text embeddings
+        art_style_similarity = np.dot(image_features, art_style_embeddings.T) / (
+            np.linalg.norm(image_features) * np.linalg.norm(art_style_embeddings, axis=1)
+        )
+        environment_similarity = np.dot(image_features, environment_embeddings.T) / (
+            np.linalg.norm(image_features) * np.linalg.norm(environment_embeddings, axis=1)
+        )
+        mood_similarity = np.dot(image_features, mood_embeddings.T) / (
+            np.linalg.norm(image_features) * np.linalg.norm(mood_embeddings, axis=1)
+        )
+
+        # Determine the most likely category based on similarity scores
+        # (You might need to adjust thresholds based on your data)
+        art_style = (
+            art_styles[np.argmax(art_style_similarity)]
+            if np.max(art_style_similarity) > 0.2
+            else "N/A"
+        )
+        environment = (
+            environments[np.argmax(environment_similarity)]
+            if np.max(environment_similarity) > 0.2
+            else "N/A"
+        )
+        mood = (
+            moods[np.argmax(mood_similarity)] if np.max(mood_similarity) > 0.2 else "N/A"
+        )
+
+        return {"Art Style": art_style, "Environment": environment, "Mood": mood}
+
     except FileNotFoundError:
         logging.error(f"Image file not found: {image_path}")
         return None
@@ -98,18 +165,26 @@ def analyze_image(image_path):
         return None
 
 def fill_sheet():
+    """Fills the Google Sheet with AI responses and sentiment scores."""
     try:
         rows = sheet.get_all_values()
+        updates = []  # List to store batch updates
+
         for i, row in enumerate(rows):
-            if i == 0: continue #Skip header row
-            if row and len(row)>1 and row[1]: continue #Skip rows that already have a response
+            if i == 0:
+                continue  # Skip header row
+            if row and len(row) > 1 and row[1]:
+                continue  # Skip rows that already have a response
+
             question = row[0] if row else None
             if not question:
                 logging.warning(f"Skipping empty row: {i+1}")
                 continue
+
             genre = row[2] if len(row) > 2 else "General"
             dynamic_prompt = prompts_by_genre.get(genre, [question])[0]
             response = ask_ai(dynamic_prompt)
+
             if response:
                 sentiment = analyze_sentiment(response)
                 language = row[3] if len(row) > 3 else "en"
@@ -118,23 +193,51 @@ def fill_sheet():
                         response = translator.translate(response, dest=language).text
                     except Exception as e:
                         logging.warning(f"Translation error: {e}")
-                sheet.update_cell(i + 1, 2, response)
-                sheet.update_cell(i + 1, 5, f"Sentiment: {sentiment:.2f}")
+
+                updates.append(
+                    {
+                        "range": f"B{i+1}",  # Response column
+                        "values": [[response]],
+                    }
+                )
+                updates.append(
+                    {
+                        "range": f"E{i+1}",  # Sentiment column
+                        "values": [[f"Sentiment: {sentiment:.2f}"]],
+                    }
+                )
                 logging.info(f"Updated row {i + 1}: {question} -> {response}")
             else:
                 logging.warning(f"No response from AI for row {i+1}")
+
+        if updates:
+            sheet.batch_update(updates, value_input_option="USER_ENTERED")
+
     except gspread.exceptions.APIError as e:
         logging.error(f"Google Sheets API Error: {e}")
     except Exception as e:
         logging.error(f"Error in fill_sheet: {e}")
 
 def populate_image_analysis(image_path, row):
+    """Populates image analysis results into the Google Sheet."""
     features = analyze_image(image_path)
     if features:
         try:
-            sheet.update_cell(row, 6, features["Art Style"])
-            sheet.update_cell(row, 7, features["Environment"])
-            sheet.update_cell(row, 8, features["Mood"])
+            updates = [
+                {
+                    "range": f"F{row}",  # Art Style column
+                    "values": [[features["Art Style"]]],
+                },
+                {
+                    "range": f"G{row}",  # Environment column
+                    "values": [[features["Environment"]]],
+                },
+                {
+                    "range": f"H{row}",  # Mood column
+                    "values": [[features["Mood"]]],
+                },
+            ]
+            sheet.batch_update(updates, value_input_option="USER_ENTERED")
             logging.info(f"Updated row {row} with image analysis.")
         except gspread.exceptions.APIError as e:
             logging.error(f"Google Sheets API Error during image update: {e}")
@@ -142,24 +245,27 @@ def populate_image_analysis(image_path, row):
         logging.warning(f"Could not analyze image for row {row}")
 
 def visualize_sentiments():
+    """Visualizes the sentiment scores using a bar chart."""
     try:
         rows = sheet.get_all_values()
         sentiments = []
         questions = []
         for row in rows[1:]:
             try:
-                if len(row) > 4 and row[4]: # check if sentiment cell exists and isn't empty
-                    sentiment = float(row[4].split(':')[-1])
+                if len(row) > 4 and row[4]:  # Check if sentiment cell exists and isn't empty
+                    sentiment = float(row[4].split(":")[-1])
                     sentiments.append(sentiment)
                     questions.append(row[0])
             except (ValueError, IndexError):
                 logging.warning(f"Invalid sentiment data in row: {row}")
                 continue
 
-        if sentiments: # check if there is any sentiment data
-            plt.barh(questions, sentiments, color='blue')
+        if sentiments:  # Check if there is any sentiment data
+            plt.figure(figsize=(10, len(questions) * 0.5))
+            plt.barh(questions, sentiments, color="blue")
             plt.xlabel("Sentiment Score")
             plt.title("Sentiment Analysis of AI Responses")
+            plt.tight_layout()
             plt.show()
         else:
             logging.warning("No valid sentiment data to visualize.")
@@ -173,5 +279,5 @@ def visualize_sentiments():
 if __name__ == "__main__":
     fill_sheet()
     # Example usage (uncomment and replace with actual path and row):
-    # populate_image_analysis("path/to/your/image.jpg", 2)
+    # populate_image_analysis("path/to/your/image.jpg", 2)  # Update row 2 with image analysis
     visualize_sentiments()
