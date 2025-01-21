@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Trailblazer Tech Hub: An open-source community exploring gaming and AI innovations. Join us to shape the future of gaming AI!">
+    <title>Trailblazer Tech Hub</title>
+    <link rel="stylesheet" href="style.css"> <!-- Link to the CSS file -->
+</head>
+<body>
+   <header>
+        <h1>Welcome to Trailblazer Tech Hub</h1>
+        <nav>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contribute">Contribute</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <section id="intro">
+        <h2>Pioneering the Future of Gaming and AI</h2>
+        <p>Join our community-driven project to build a comprehensive dataset for training the next generation of gaming AI. Your contributions will help create more intelligent NPCs, generate dynamic game content, and personalize gaming experiences.</p>
+    </section>
+
+    <section id="about">
+        <h2>About Trailblazer Tech Hub</h2>
+        <p>Trailblazer Tech Hub is an open-source initiative dedicated to exploring the intersection of gaming and artificial intelligence. We believe in the power of collective intelligence and aim to build a platform where gamers, developers, and AI enthusiasts can collaborate, learn, and innovate together.</p>
+    </section>
+
+    <section id="contribute">
+        <h2>Contribute to the Project</h2>
+        <p>We're collecting data on various games to train a specialized AI that understands game narratives, player sentiment, and gameplay dynamics. Your insights are invaluable to us. Share your gaming experiences by filling out the form below:</p>
+        <form name="gameData" method="POST" data-netlify="true">
+            <input type="hidden" name="form-name" value="gameData" />
+            <div>
+                <label for="gameTitle">Game Title:</label>
+                <input type="text" id="gameTitle" name="gameTitle" required>
+            </div>
+            <div>
+                <label for="genre">Genre:</label>
+                <input type="text" id="genre" name="genre" required>
+            </div>
+            <div>
+                <label for="sentiment">Your Overall Sentiment:</label>
+                <select id="sentiment" name="sentiment">
+                    <option value="positive">Positive</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="negative">Negative</option>
+                </select>
+            </div>
+            <div>
+                <label for="story">Story Summary:</label>
+                <textarea id="story" name="story" rows="4" placeholder="Describe the game's story..."></textarea>
+            </div>
+            <div>
+                <label for="gameplay">Gameplay Experience:</label>
+                <textarea id="gameplay" name="gameplay" rows="4" placeholder="Describe your gameplay experience..."></textarea>
+            </div>
+            <div>
+                <label for="openFeedback">Additional Comments:</label>
+                <textarea id="openFeedback" name="openFeedback" rows="4" placeholder="Any other feedback..."></textarea>
+            </div>
+            <button type="submit">Submit Data</button>
+        </form>
+    </section>
+
+    <section id="contact">
+        <h2>Contact Us</h2>
+        <p>Have questions or suggestions? Reach out to us through our <a href="https://discord.gg/4Gbfc3hh4E" target="_blank">Discord server</a> or follow us on <a href="https://x.com/x3pneumonicx3" target="_blank">Twitter</a>.</p>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Trailblazer Tech Hub. All rights reserved.</p>
+    </footer> <!-- Your HTML content goes here -->
+</body>
+</html>
