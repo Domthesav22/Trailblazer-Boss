@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Trailblazer Tech Hub: An open-source community exploring gaming and AI innovations. Join us to shape the future of gaming AI!">
-    <title>Trailblazer Tech Hub</title>
-    <link rel="stylesheet" href="style.css"> <!-- Link to the CSS file -->
+    <title>Trailblazer Tech Hub - Game Data Submission</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-   <header>
+    <header>
         <h1>Welcome to Trailblazer Tech Hub</h1>
         <nav>
             <ul>
@@ -35,32 +34,148 @@
         <form name="gameData" method="POST" data-netlify="true">
             <input type="hidden" name="form-name" value="gameData" />
             <div>
-                <label for="gameTitle">Game Title:</label>
+                <label for="gameTitle">1. Game Title:</label>
                 <input type="text" id="gameTitle" name="gameTitle" required>
             </div>
             <div>
-                <label for="genre">Genre:</label>
-                <input type="text" id="genre" name="genre" required>
+                <label for="genre">2. Genre(s):</label>
+                <input type="text" id="genre" name="genre" placeholder="Action RPG, FPS, etc." required>
             </div>
             <div>
-                <label for="sentiment">Your Overall Sentiment:</label>
-                <select id="sentiment" name="sentiment">
-                    <option value="positive">Positive</option>
-                    <option value="neutral">Neutral</option>
-                    <option value="negative">Negative</option>
-                </select>
+                <label for="platforms">3. Platforms:</label>
+                <input type="text" id="platforms" name="platforms" placeholder="PC, PS5, Xbox, etc." required>
             </div>
             <div>
-                <label for="story">Story Summary:</label>
-                <textarea id="story" name="story" rows="4" placeholder="Describe the game's story..."></textarea>
+                <label for="releaseDate">4. Release Date(s):</label>
+                <input type="text" id="releaseDate" name="releaseDate" placeholder="YYYY-MM-DD" required>
             </div>
             <div>
-                <label for="gameplay">Gameplay Experience:</label>
-                <textarea id="gameplay" name="gameplay" rows="4" placeholder="Describe your gameplay experience..."></textarea>
+                <label for="developer">5. Developer(s):</label>
+                <input type="text" id="developer" name="developer" required>
             </div>
             <div>
-                <label for="openFeedback">Additional Comments:</label>
-                <textarea id="openFeedback" name="openFeedback" rows="4" placeholder="Any other feedback..."></textarea>
+                <label for="publisher">6. Publisher(s):</label>
+                <input type="text" id="publisher" name="publisher" required>
+            </div>
+            <div>
+                <label for="targetAudience">7. Target Audience:</label>
+                <input type="text" id="targetAudience" name="targetAudience" placeholder="Casual, Hardcore, etc." required>
+            </div>
+            <div>
+                <label for="setting">8. Setting:</label>
+                <input type="text" id="setting" name="setting" placeholder="Medieval Fantasy, Futuristic City, etc." required>
+            </div>
+            <div>
+                <label for="context">9. Cultural/Social Context:</label>
+                <textarea id="context" name="context" rows="4" placeholder="Factions, ideologies, social structures, etc."></textarea>
+            </div>
+            <div>
+                <label for="plotSummary">10. Plot Summary (1-2 sentences):</label>
+                <textarea id="plotSummary" name="plotSummary" rows="2" required></textarea>
+            </div>
+            <div>
+                <label for="plotEvents">11. Key Plot Events/Twists:</label>
+                <textarea id="plotEvents" name="plotEvents" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="endings">12. Endings (if multiple, describe differences):</label>
+                <textarea id="endings" name="endings" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="protagonist">13. Protagonist(s) (Details):</label>
+                <textarea id="protagonist" name="protagonist" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="supportingCharacters">14. Supporting Characters (Roles & Significance):</label>
+                <textarea id="supportingCharacters" name="supportingCharacters" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="antagonist">15. Antagonist(s) (Motivations & Goals):</label>
+                <textarea id="antagonist" name="antagonist" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="otherEntities">16. Other Notable Entities:</label>
+                <textarea id="otherEntities" name="otherEntities" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="coreMechanics">17. Core Gameplay Mechanics:</label>
+                <textarea id="coreMechanics" name="coreMechanics" rows="4" placeholder="Combat, exploration, crafting, etc."></textarea>
+            </div>
+            <div>
+                <label for="uniqueFeatures">18. Unique Gameplay Features:</label>
+                <textarea id="uniqueFeatures" name="uniqueFeatures" rows="4" placeholder="Time manipulation, gravity, etc."></textarea>
+            </div>
+            <div>
+                <label for="difficulty">19. Difficulty & Accessibility:</label>
+                <textarea id="difficulty" name="difficulty" rows="4" placeholder="Difficulty options, accessibility features"></textarea>
+            </div>
+            <div>
+                <label for="visualStyle">20. Visual Style:</label>
+                <input type="text" id="visualStyle" name="visualStyle" placeholder="Pixel art, realistic, stylized, etc." required>
+            </div>
+            <div>
+                <label for="audioDesign">21. Audio Design (Music, Sound Effects, Voice Acting):</label>
+                <textarea id="audioDesign" name="audioDesign" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="coreThemes">22. Core Themes:</label>
+                <textarea id="coreThemes" name="coreThemes" rows="4" placeholder="Loss, redemption, survival, etc."></textarea>
+            </div>
+            <div>
+                <label for="influences">23. Influences & Inspirations:</label>
+                <textarea id="influences" name="influences" rows="4" placeholder="Literature, film, mythology, history, etc."></textarea>
+            </div>
+            <div>
+                <label for="worldStructure">24. World Structure:</label>
+                <input type="text" id="worldStructure" name="worldStructure" placeholder="Open-world, linear, level-based, etc." required>
+            </div>
+            <div>
+                <label for="worldInteractivity">25. World Interactivity:</label>
+                <textarea id="worldInteractivity" name="worldInteractivity" rows="4" placeholder="Destructible environments, dynamic events, etc."></textarea>
+            </div>
+            <div>
+                <label for="lore">26. Lore & Backstory:</label>
+                <textarea id="lore" name="lore" rows="4" placeholder="History, mythology, factions, locations, etc."></textarea>
+            </div>
+            <div>
+                <label for="criticalReception">27. Critical Reception:</label>
+                <textarea id="criticalReception" name="criticalReception" rows="4" placeholder="Metacritic scores, common praise/criticism"></textarea>
+            </div>
+            <div>
+                <label for="sales">28. Sales & Commercial Performance:</label>
+                <textarea id="sales" name="sales" rows="4" placeholder="Sales milestones, records"></textarea>
+            </div>
+            <div>
+                <label for="industryInfluence">29. Industry Influence:</label>
+                <textarea id="industryInfluence" name="industryInfluence" rows="4" placeholder="Influence on the industry or genre, new technologies/mechanics introduced"></textarea>
+            </div>
+            <div>
+                <label for="personalExperience">30. Personal Experience:</label>
+                <textarea id="personalExperience" name="personalExperience" rows="4" placeholder="Memorable moments from playing"></textarea>
+            </div>
+            <div>
+                <label for="strengthsWeaknesses">31. Strengths & Weaknesses (Personal):</label>
+                <textarea id="strengthsWeaknesses" name="strengthsWeaknesses" rows="4"></textarea>
+            </div>
+            <div>
+                <label for="overallRating">32. Overall Rating/Summary:</label>
+                <textarea id="overallRating" name="overallRating" rows="4" placeholder="Rate key attributes (Story, Gameplay, Graphics, Sound) on a scale of 1-10"></textarea>
+            </div>
+            <div>
+                <label for="worldReactivity">33. World Reactivity:</label>
+                <textarea id="worldReactivity" name="worldReactivity" rows="4" placeholder="How player actions influence the world/NPCs"></textarea>
+            </div>
+            <div>
+                <label for="replayabilityFeatures">34. Replayability Features:</label>
+                <textarea id="replayabilityFeatures" name="replayabilityFeatures" rows="4" placeholder="Multiple endings, randomized content, New Game+"></textarea>
+            </div>
+            <div>
+                <label for="communityPresence">35. Community Presence:</label>
+                <textarea id="communityPresence" name="communityPresence" rows="4" placeholder="Size and activity of community, forums, fan content, developer updates"></textarea>
+            </div>
+            <div>
+                <label for="postLaunchSupport">36. Post-Launch Support:</label>
+                <textarea id="postLaunchSupport" name="postLaunchSupport" rows="4" placeholder="Regular updates, expansions, live-service elements"></textarea>
             </div>
             <button type="submit">Submit Data</button>
         </form>
@@ -68,11 +183,11 @@
 
     <section id="contact">
         <h2>Contact Us</h2>
-        <p>Have questions or suggestions? Reach out to us through our <a href="https://discord.gg/4Gbfc3hh4E" target="_blank">Discord server</a> or follow us on <a href="https://x.com/x3pneumonicx3" target="_blank">Twitter</a>.</p>
+        <p>Have questions or suggestions? Reach out to us through our <a href="[Your Discord Server Link]" target="_blank">Discord server</a> or follow us on <a href="[Your Twitter Link]" target="_blank">Twitter</a>.</p>
     </section>
 
     <footer>
         <p>&copy; 2024 Trailblazer Tech Hub. All rights reserved.</p>
-    </footer> <!-- Your HTML content goes here -->
+    </footer>
 </body>
 </html>
