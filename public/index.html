@@ -31,7 +31,7 @@
     <section id="contribute">
         <h2>Contribute to the Project</h2>
         <p>We're collecting data on various games to train a specialized AI that understands game narratives, player sentiment, and gameplay dynamics. Your insights are invaluable to us. Share your gaming experiences by filling out the form below:</p>
-        <form name="gameData" method="POST" data-netlify="true">
+        <form name="gameData" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
             <input type="hidden" name="form-name" value="gameData" />
             <div>
                 <label for="gameTitle">1. Game Title:</label>
@@ -69,125 +69,8 @@
                 <label for="context">9. Cultural/Social Context:</label>
                 <textarea id="context" name="context" rows="4" placeholder="Factions, ideologies, social structures, etc."></textarea>
             </div>
-            <div>
-                <label for="plotSummary">10. Plot Summary (1-2 sentences):</label>
-                <textarea id="plotSummary" name="plotSummary" rows="2" required></textarea>
-            </div>
-            <div>
-                <label for="plotEvents">11. Key Plot Events/Twists:</label>
-                <textarea id="plotEvents" name="plotEvents" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="endings">12. Endings (if multiple, describe differences):</label>
-                <textarea id="endings" name="endings" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="protagonist">13. Protagonist(s) (Details):</label>
-                <textarea id="protagonist" name="protagonist" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="supportingCharacters">14. Supporting Characters (Roles & Significance):</label>
-                <textarea id="supportingCharacters" name="supportingCharacters" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="antagonist">15. Antagonist(s) (Motivations & Goals):</label>
-                <textarea id="antagonist" name="antagonist" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="otherEntities">16. Other Notable Entities:</label>
-                <textarea id="otherEntities" name="otherEntities" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="coreMechanics">17. Core Gameplay Mechanics:</label>
-                <textarea id="coreMechanics" name="coreMechanics" rows="4" placeholder="Combat, exploration, crafting, etc."></textarea>
-            </div>
-            <div>
-                <label for="uniqueFeatures">18. Unique Gameplay Features:</label>
-                <textarea id="uniqueFeatures" name="uniqueFeatures" rows="4" placeholder="Time manipulation, gravity, etc."></textarea>
-            </div>
-            <div>
-                <label for="difficulty">19. Difficulty & Accessibility:</label>
-                <textarea id="difficulty" name="difficulty" rows="4" placeholder="Difficulty options, accessibility features"></textarea>
-            </div>
-            <div>
-                <label for="visualStyle">20. Visual Style:</label>
-                <input type="text" id="visualStyle" name="visualStyle" placeholder="Pixel art, realistic, stylized, etc." required>
-            </div>
-            <div>
-                <label for="audioDesign">21. Audio Design (Music, Sound Effects, Voice Acting):</label>
-                <textarea id="audioDesign" name="audioDesign" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="coreThemes">22. Core Themes:</label>
-                <textarea id="coreThemes" name="coreThemes" rows="4" placeholder="Loss, redemption, survival, etc."></textarea>
-            </div>
-            <div>
-                <label for="influences">23. Influences & Inspirations:</label>
-                <textarea id="influences" name="influences" rows="4" placeholder="Literature, film, mythology, history, etc."></textarea>
-            </div>
-            <div>
-                <label for="worldStructure">24. World Structure:</label>
-                <input type="text" id="worldStructure" name="worldStructure" placeholder="Open-world, linear, level-based, etc." required>
-            </div>
-            <div>
-                <label for="worldInteractivity">25. World Interactivity:</label>
-                <textarea id="worldInteractivity" name="worldInteractivity" rows="4" placeholder="Destructible environments, dynamic events, etc."></textarea>
-            </div>
-            <div>
-                <label for="lore">26. Lore & Backstory:</label>
-                <textarea id="lore" name="lore" rows="4" placeholder="History, mythology, factions, locations, etc."></textarea>
-            </div>
-            <div>
-                <label for="criticalReception">27. Critical Reception:</label>
-                <textarea id="criticalReception" name="criticalReception" rows="4" placeholder="Metacritic scores, common praise/criticism"></textarea>
-            </div>
-            <div>
-                <label for="sales">28. Sales & Commercial Performance:</label>
-                <textarea id="sales" name="sales" rows="4" placeholder="Sales milestones, records"></textarea>
-            </div>
-            <div>
-                <label for="industryInfluence">29. Industry Influence:</label>
-                <textarea id="industryInfluence" name="industryInfluence" rows="4" placeholder="Influence on the industry or genre, new technologies/mechanics introduced"></textarea>
-            </div>
-            <div>
-                <label for="personalExperience">30. Personal Experience:</label>
-                <textarea id="personalExperience" name="personalExperience" rows="4" placeholder="Memorable moments from playing"></textarea>
-            </div>
-            <div>
-                <label for="strengthsWeaknesses">31. Strengths & Weaknesses (Personal):</label>
-                <textarea id="strengthsWeaknesses" name="strengthsWeaknesses" rows="4"></textarea>
-            </div>
-            <div>
-                <label for="overallRating">32. Overall Rating/Summary:</label>
-                <textarea id="overallRating" name="overallRating" rows="4" placeholder="Rate key attributes (Story, Gameplay, Graphics, Sound) on a scale of 1-10"></textarea>
-            </div>
-            <div>
-                <label for="worldReactivity">33. World Reactivity:</label>
-                <textarea id="worldReactivity" name="worldReactivity" rows="4" placeholder="How player actions influence the world/NPCs"></textarea>
-            </div>
-            <div>
-                <label for="replayabilityFeatures">34. Replayability Features:</label>
-                <textarea id="replayabilityFeatures" name="replayabilityFeatures" rows="4" placeholder="Multiple endings, randomized content, New Game+"></textarea>
-            </div>
-            <div>
-                <label for="communityPresence">35. Community Presence:</label>
-                <textarea id="communityPresence" name="communityPresence" rows="4" placeholder="Size and activity of community, forums, fan content, developer updates"></textarea>
-            </div>
-            <div>
-                <label for="postLaunchSupport">36. Post-Launch Support:</label>
-                <textarea id="postLaunchSupport" name="postLaunchSupport" rows="4" placeholder="Regular updates, expansions, live-service elements"></textarea>
-            </div>
-            <button type="submit">Submit Data</button>
+            <!-- Add more fields as needed -->
         </form>
     </section>
-
-    <section id="contact">
-        <h2>Contact Us</h2>
-        <p>Have questions or suggestions? Reach out to us through our <a href="[Your Discord Server Link]" target="_blank">Discord server</a> or follow us on <a href="[Your Twitter Link]" target="_blank">Twitter</a>.</p>
-    </section>
-
-    <footer>
-        <p>&copy; 2024 Trailblazer Tech Hub. All rights reserved.</p>
-    </footer>
 </body>
 </html>
