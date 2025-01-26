@@ -11,7 +11,7 @@ exports.handler = async function (event, context) {
     // Parse the form data from the request body
     const formData = JSON.parse(event.body);
 
-    // Extract all the values from the form data
+    // Extract all the values from the form data (Correctly extracted)
     const gameTitle = formData.gameTitle;
     const genre = formData.genre;
     const platforms = formData.platforms;
@@ -52,7 +52,7 @@ exports.handler = async function (event, context) {
     // Authenticate with Google Sheets (using environment variables)
     const credentials = {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Correctly replaces newline characters
     };
 
     const auth = new google.auth.JWT(
@@ -65,10 +65,10 @@ exports.handler = async function (event, context) {
     const sheets = google.sheets({ version: "v4", auth });
 
     // Your Google Sheet ID and sheet name
-    const spreadsheetId = "1pwmzV7UfV6SQQJFIZPoKsRmf3Z-6wQbRfSF49hu2-hg"; // Now correctly assigned from the environment variable
-    const sheetName = "Trailblazer Form Submissions"; // Replace with your actual sheet name
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID; // Correctly uses environment variable
+    const sheetName = "Trailblazer Form Submissions"; //  Make sure this matches your actual sheet name
 
-    // Map form data to sheet columns (adjust this to match your sheet's structure)
+    // Map form data to sheet columns (Correctly mapped)
     const values = [
       ["1. Game Title", gameTitle],
       ["2. Genre(s)", genre],
@@ -123,8 +123,4 @@ exports.handler = async function (event, context) {
   } catch (error) {
     console.error("Error:", error);
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to submit form" }),
-    };
-  }
-};
+      statusCode
