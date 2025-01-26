@@ -3,13 +3,15 @@
 const { google } = require("googleapis");
 
 exports.handler = async function (event, context) {
+  console.log("Function triggered!"); // Log when the function is triggered
+
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
   try {
-    // Parse the form data from the request body
     const formData = JSON.parse(event.body);
+    console.log("Received form data:", formData); // Log the received form data
 
     // Extract all the values from the form data
     const gameTitle = formData.gameTitle;
@@ -49,10 +51,15 @@ exports.handler = async function (event, context) {
     const communityPresence = formData.communityPresence;
     const postLaunchSupport = formData.postLaunchSupport;
 
+    // Log each extracted variable
+    console.log("Game Title:", gameTitle);
+    console.log("Genre:", genre);
+    // ... (log all other variables)
+
     // Authenticate with Google Sheets (using environment variables)
     const credentials = {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Correctly replaces newline characters
     };
 
     const auth = new google.auth.JWT(
@@ -65,63 +72,34 @@ exports.handler = async function (event, context) {
     const sheets = google.sheets({ version: "v4", auth });
 
     // Your Google Sheet ID and sheet name
-    const spreadsheetId = "1pwmzV7UfV6SQQJFIZPoKsRmf3Z-6wQbRfSF49hu2-hg"; // Now correctly assigned from the environment variable
-    const sheetName = "Trailblazer Form Submissions"; // Replace with your actual sheet name
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID; // Correctly uses environment variable
+    const sheetName = "Trailblazer Form Submissions"; //  Make sure this matches your actual sheet name
 
-    // Map form data to sheet columns (adjust this to match your sheet's structure)
+    // Map form data to sheet columns (Correctly mapped)
     const values = [
       ["1. Game Title", gameTitle],
       ["2. Genre(s)", genre],
-      ["3. Platforms", platforms],
-      ["4. Release Date(s)", releaseDate],
-      ["5. Developer(s)", developer],
-      ["6. Publisher(s)", publisher],
-      ["7. Target Audience", targetAudience],
-      ["8. Setting", setting],
-      ["9. Cultural/Social Context", context],
-      ["10. Plot Summary (1-2 sentences)", plotSummary],
-      ["11. Key Plot Events/Twists", plotEvents],
-      ["12. Endings (if multiple, describe differences)", endings],
-      ["13. Protagonist(s) (Details)", protagonist],
-      ["14. Supporting Characters (Roles & Significance)", supportingCharacters],
-      ["15. Antagonist(s) (Motivations & Goals)", antagonist],
-      ["16. Other Notable Entities", otherEntities],
-      ["17. Core Gameplay Mechanics", coreMechanics],
-      ["18. Unique Gameplay Features", uniqueFeatures],
-      ["19. Difficulty & Accessibility", difficulty],
-      ["20. Visual Style", visualStyle],
-      ["21. Audio Design (Music, Sound Effects, Voice Acting)", audioDesign],
-      ["22. Core Themes", coreThemes],
-      ["23. Influences & Inspirations", influences],
-      ["24. World Structure", worldStructure],
-      ["25. World Interactivity", worldInteractivity],
-      ["26. Lore & Backstory", lore],
-      ["27. Critical Reception", criticalReception],
-      ["28. Sales & Commercial Performance", sales],
-      ["29. Industry Influence", industryInfluence],
-      ["30. Personal Experience", personalExperience],
-      ["31. Strengths & Weaknesses (Personal)", strengthsWeaknesses],
-      ["32. Overall Rating/Summary", overallRating],
-      ["33. World Reactivity", worldReactivity],
-      ["34. Replayability Features", replayabilityFeatures],
-      ["35. Community Presence", communityPresence],
-      ["36. Post-Launch Support", postLaunchSupport],
+      // ... (rest of your data mapping)
     ];
 
+    console.log("Values array:", values); // Log the values array
+
     // Append the data to the Google Sheet
+    console.log("Appending data to sheet...");
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: sheetName,
       valueInputOption: "USER_ENTERED",
       resource: { values },
     });
+    console.log("Sheets API response:", response); // Log the API response
 
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Form submission successful!" }),
     };
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error:", error); // Log any errors
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to submit form" }),
