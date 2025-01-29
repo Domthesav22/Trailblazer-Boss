@@ -1,9 +1,8 @@
 // netlify/functions/submit-form.js
-
 const { google } = require("googleapis");
 
 exports.handler = async function (event, context) {
-  console.log("Function triggered!"); // Log when the function is triggered
+  console.log("Function triggered!");
 
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
@@ -11,9 +10,9 @@ exports.handler = async function (event, context) {
 
   try {
     const formData = JSON.parse(event.body);
-    console.log("Received form data:", formData); // Log the received form data
+    console.log("Received form data:", formData);
 
-    // Extract all the values from the form data
+    // Extract all form data
     const gameTitle = formData.gameTitle;
     const genre = formData.genre;
     const platforms = formData.platforms;
@@ -51,15 +50,10 @@ exports.handler = async function (event, context) {
     const communityPresence = formData.communityPresence;
     const postLaunchSupport = formData.postLaunchSupport;
 
-    // Log each extracted variable
-    console.log("Game Title:", gameTitle);
-    console.log("Genre:", genre);
-    // ... (log all other variables)
-
-    // Authenticate with Google Sheets (using environment variables)
+    // Google Sheets Authentication
     const credentials = {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Correctly replaces newline characters
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
     };
 
     const auth = new google.auth.JWT(
@@ -71,20 +65,54 @@ exports.handler = async function (event, context) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Your Google Sheet ID and sheet name
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID; // Correctly uses environment variable
-    const sheetName = "Trailblazer Form Submissions"; //  Make sure this matches your actual sheet name
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const sheetName = "Trailblazer Form Submissions"; // Verify this!
 
-    // Map form data to sheet columns (Correctly mapped)
+    // Correct Data Mapping (only the values, not the questions)
     const values = [
-      ["1. Game Title", gameTitle],
-      ["2. Genre(s)", genre],
-      // ... (rest of your data mapping)
+      [
+        gameTitle,
+        genre,
+        platforms,
+        releaseDate,
+        developer,
+        publisher,
+        targetAudience,
+        setting,
+        context,
+        plotSummary,
+        plotEvents,
+        endings,
+        protagonist,
+        supportingCharacters,
+        antagonist,
+        otherEntities,
+        coreMechanics,
+        uniqueFeatures,
+        difficulty,
+        visualStyle,
+        audioDesign,
+        coreThemes,
+        influences,
+        worldStructure,
+        worldInteractivity,
+        lore,
+        criticalReception,
+        sales,
+        industryInfluence,
+        personalExperience,
+        strengthsWeaknesses,
+        overallRating,
+        worldReactivity,
+        replayabilityFeatures,
+        communityPresence,
+        postLaunchSupport,
+      ],
     ];
 
-    console.log("Values array:", values); // Log the values array
+    console.log("Values array:", values);
 
-    // Append the data to the Google Sheet
+    // Append to Google Sheet
     console.log("Appending data to sheet...");
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
@@ -92,14 +120,14 @@ exports.handler = async function (event, context) {
       valueInputOption: "USER_ENTERED",
       resource: { values },
     });
-    console.log("Sheets API response:", response); // Log the API response
+    console.log("Sheets API response:", response);
 
     return {
       statusCode: 200,
       body: JSON.stringify({ message: "Form submission successful!" }),
     };
   } catch (error) {
-    console.error("Error:", error); // Log any errors
+    console.error("Error:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Failed to submit form" }),
