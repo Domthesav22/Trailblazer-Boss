@@ -1,4 +1,3 @@
-// netlify/functions/submit-form.js
 const { google } = require("googleapis");
 
 exports.handler = async function (event, context) {
